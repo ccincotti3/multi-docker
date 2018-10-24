@@ -1,0 +1,23 @@
+sudo: required
+services:
+  - docker
+
+#Use Dockerfile.dev because the prod Dockerfile only builds prod JS code. Can't run tests with that!
+before_install:
+  - docker build -t ccincotti3/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run ccincotti3/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t ccincotti3/multi-client ./client
+  - docker build -t ccincotti3/multi-nginx ./nginx
+  - docker build -t ccincotti3/multi-server ./server
+  - docker build -t ccincotti3/multi-worker ./worker
+  #Log in to the docker CLI ... this is how we login to Docker with one command
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  #Take these images and push them to docker hub
+  - docker push ccincotti3/multi-client
+  - docker push ccincotti3/multi-nginx
+  - docker push ccincotti3/multi-server
+  - docker push ccincotti3/multi-worker
