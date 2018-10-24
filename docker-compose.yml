@@ -1,0 +1,58 @@
+# Docker Compose - We use this so that it's easier to start up each of our containers with the correct config
+# For example, we need to make sure that the React and Express server are available on specific ports
+# We also need to make sure that the Worker is able to connect to Redis
+# Need to make sure the ENV Variables are supplied as well. Basically, a lot to do with
+# a bunch of intermingling, so docker-compose helps config multiple containers to run at once AND to work nicely together
+
+# A dash ( - ) before a value specifies an array
+
+version: '3' #neccessary
+services:
+  postgres: #this name is arbitrary
+    image: 'postgres:latest'
+  redis: 
+    image: 'redis:latest'
+  nginx:
+    restart: always #We NEED this to run
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - '3050:80'
+  api:
+    build:
+      dockerfile: Dockerfile.dev #the file name
+      context: ./server # the directory used to build the image
+    volumes: # Remember, references from inside the container to the local machine essentially
+      - /app/node_modules # Leave as is, as in - don't make a reference to node_modules outside the container.
+      - ./server:/app # Now if the container tries to access anything anything in the app directory (besides node_modules), it will be redirected to ./server
+    environment: 
+      - REDIS_HOST=redis #the service name that we defined up top
+      - REDIS_PORT=6379 #see doc
+      - PGUSER=postgres # default - see doc
+      - PGHOST=postgres # the service name that we defined up top
+      - PGDATABASE=postgres # default - see doc
+      - PGPASSWORD=postgres_password #default pw, see docs (although Grider couldn't find it)
+      - PGPORT=5432
+  client:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+        - /app/node_modules
+        - ./client:/app
+  worker:
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    volumes:
+        - /app/node_modules
+        - ./worker:/app
+
+# In terminal: docker-compose up
+
+# POSTGRES Documentation https://hub.docker.com/_/postgres/
+# REDIS Documentation https://hub.docker.com/_/redis/

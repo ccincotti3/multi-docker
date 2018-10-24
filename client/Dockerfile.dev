@@ -1,0 +1,9 @@
+FROM node:alpine
+WORKDIR '/app'
+COPY ./package.json ./
+RUN npm install
+COPY . .
+CMD ["npm", "run", "start"]
+
+#Run this command to build: docker build -f Dockerfile.dev . 
+#Get ID and then run: docker run ID
